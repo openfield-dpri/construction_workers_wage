@@ -1,0 +1,52 @@
+name: Scrape daily job wages
+
+on:
+  schedule:
+    # 01:00 JST (16:00 UTC on the preceding day)
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+    inputs:
+      prefectures:
+        description: "Comma-separated prefectures (blank means all 47)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-job-wage-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Collect public job metadata
+        env:
+          PREFECTURES: ${{ inputs.prefectures }}
+        run: |
+          if [ -n "$PREFECTURES" ]; then
+            python scraper.py --prefectures "$PREFECTURES"
+          else
+            python scraper.py
+          fi
+      - name: Commit updated data
+        run: |
+          if git diff --quiet -- data; then
+            echo "No data changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "Update job wage data $(TZ=Asia/Tokyo date +%F)"
+          git push
