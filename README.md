@@ -14,7 +14,7 @@ python scraper.py --prefectures 東京都,大阪府,石川県
 python scraper.py --prefectures 熊本県 --occupations 大工 --max-rows 10 --debug
 ```
 
-GitHub Actions は毎日 01:00 JST（前日 16:00 UTC）に実行されます。`workflow_dispatch` では、都道府県をカンマ区切りで指定できます。データに差分があれば `Update job wage data YYYY-MM-DD` で自動コミット・プッシュします。
+GitHub Actions は毎日 01:00 JST（前日 16:00 UTC）に実行されます。`workflow_dispatch` では、都道府県・職種をカンマ区切りで指定でき、動作確認用に最大取得件数も指定できます。スケジュール実行ではこれらの指定を省略して全件を収集します。`data/daily` に差分があれば `Update job wage data YYYY-MM-DD` で自動コミットし、実行中に他の変更が入った場合はリベースしてからプッシュします。
 
 ## アクセス方針
 

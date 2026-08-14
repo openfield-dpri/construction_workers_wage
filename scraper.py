@@ -177,7 +177,6 @@ LOGGER = logging.getLogger(__name__)
 def jst_today() -> str:
     return datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
 
-
 @dataclass(frozen=True)
 class RobotsPolicy:
     parser: RobotFileParser

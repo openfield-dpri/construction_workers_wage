@@ -10,6 +10,14 @@ on:
         description: "Comma-separated prefectures (blank means all 47)"
         required: false
         type: string
+      occupations:
+        description: "Comma-separated occupations (blank means all target occupations)"
+        required: false
+        type: string
+      max_rows:
+        description: "Maximum rows for debug (blank means unlimited)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -24,6 +32,8 @@ jobs:
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -33,23 +43,37 @@ jobs:
       - name: Collect public job metadata
         env:
           PREFECTURES: ${{ inputs.prefectures }}
+          OCCUPATIONS: ${{ inputs.occupations }}
+          MAX_ROWS: ${{ inputs.max_rows }}
         run: |
-          if [ -n "$PREFECTURES" ]; then
-            python scraper.py --prefectures "$PREFECTURES"
-          else
-            python scraper.py
+          args=()
+
+          if [[ -n "$PREFECTURES" ]]; then
+            args+=(--prefectures "$PREFECTURES")
           fi
+
+          if [[ -n "$OCCUPATIONS" ]]; then
+            args+=(--occupations "$OCCUPATIONS")
+          fi
+
+          if [[ -n "$MAX_ROWS" ]]; then
+            args+=(--max-rows "$MAX_ROWS")
+          fi
+
+          python scraper.py "${args[@]}"
       - name: Commit updated data
         run: |
-        
-          git add data
-        
-          if git diff --cached --quiet -- data; then
+          git add data/daily
+
+          if git diff --cached --quiet -- data/daily; then
             echo "No data changes to commit."
             exit 0
           fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-         
           git commit -m "Update job wage data $(TZ=Asia/Tokyo date +%F)"
-          git push
+
+          branch="${GITHUB_REF#refs/heads/}"
+          git pull --rebase origin "$branch"
+          git push origin "HEAD:$branch"
